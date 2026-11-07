@@ -1,15 +1,16 @@
-// Licensed under the Dartastic Pro Software License Agreement.
+// Licensed under the Apache License, Version 2.0
 // Copyright 2025-2026 Mindful Software LLC d/b/a Dartastic.io, All rights reserved.
 
-import 'package:dartastic_opentelemetry/dartastic_opentelemetry.dart';
+import 'package:dartastic_opentelemetry_api/dartastic_opentelemetry_api.dart';
 
 import 'otel_workos_suppression.dart';
 
 const _tracerName = 'dartastic_otel_libs_workos';
 
-Tracer _tracer() => OTel.tracerProvider().getTracer(_tracerName);
+APITracer _tracer() => OTelAPI.tracerProvider().getTracer(_tracerName);
 
 class WorkosResult {
+  /// Creates a result.
   const WorkosResult({
     this.requestId,
     this.organizationId,
@@ -41,8 +42,13 @@ class WorkosResult {
   final int? statusCode;
 }
 
+/// What a traced call returned: the value for the caller plus fields
+/// recorded on the span.
 class WorkosCallResult<T> {
+  /// Creates a call result.
   const WorkosCallResult({required this.value, this.result});
+
+  /// The value returned to the caller.
   final T value;
   final WorkosResult? result;
 }
@@ -73,47 +79,47 @@ Future<T> tracedWorkos<T>({
   final span = _tracer().startSpan(
     'workos $module.$operation',
     kind: SpanKind.client,
-    attributes: OTel.attributesFromMap(m),
+    attributes: OTelAPI.attributesFromMap(m),
   );
   try {
     final r = await invoke();
     if (r.result != null) {
       final extras = <Attribute<Object>>[];
       if (r.result!.requestId != null) {
-        extras.add(OTel.attributeString(
+        extras.add(OTelAPI.attributeString(
           'workos.request.id',
           r.result!.requestId!,
         ));
       }
       if (r.result!.organizationId != null) {
-        extras.add(OTel.attributeString(
+        extras.add(OTelAPI.attributeString(
           'workos.organization.id',
           r.result!.organizationId!,
         ));
       }
       if (r.result!.userId != null) {
-        extras.add(OTel.attributeString('user.id', r.result!.userId!));
+        extras.add(OTelAPI.attributeString('user.id', r.result!.userId!));
       }
       if (r.result!.connectionType != null) {
-        extras.add(OTel.attributeString(
+        extras.add(OTelAPI.attributeString(
           'workos.sso.connection_type',
           r.result!.connectionType!,
         ));
       }
       if (r.result!.directoryProvider != null) {
-        extras.add(OTel.attributeString(
+        extras.add(OTelAPI.attributeString(
           'workos.directory_sync.provider',
           r.result!.directoryProvider!,
         ));
       }
       if (r.result!.eventCount != null) {
-        extras.add(OTel.attributeInt(
+        extras.add(OTelAPI.attributeInt(
           'workos.event_count',
           r.result!.eventCount!,
         ));
       }
       if (r.result!.statusCode != null) {
-        extras.add(OTel.attributeInt(
+        extras.add(OTelAPI.attributeInt(
           'http.response.status_code',
           r.result!.statusCode!,
         ));
@@ -124,13 +130,13 @@ Future<T> tracedWorkos<T>({
           );
         }
       }
-      if (extras.isNotEmpty) span.addAttributes(OTel.attributes(extras));
+      if (extras.isNotEmpty) span.addAttributes(OTelAPI.attributes(extras));
     }
     return r.value;
   } catch (e, st) {
-    span.addAttributes(OTel.attributes([
-      OTel.attributeString(
-        ErrorResource.errorType.key,
+    span.addAttributes(OTelAPI.attributes([
+      OTelAPI.attributeString(
+        ErrorAttributes.errorType.key,
         e.runtimeType.toString(),
       ),
     ]));
